@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -15,15 +16,19 @@ import (
 	touchid "github.com/lox/go-touchid"
 )
 
+const (
+	DefaultLogFilename = "pinentry-touchid.log"
+	DefaultLoggerFlags = log.Ldate | log.Ltime | log.Lshortfile
+)
+
 var (
 	emailRegex = regexp.MustCompile(`\"(?P<name>.*<(?P<email>.*)>)\"`)
 	keyIDRegex = regexp.MustCompile(`ID (?P<keyId>.*),`)
 	// keyID should be of exactly 8 or 16 characters
-)
+	DefaultLogLocation = fmt.Sprintf("%s/%s", os.TempDir(), DefaultLogFilename)
 
-const (
-	DefaultLogLocation = "/tmp/test.log"
-	DefaultLoggerFlags = log.Ldate | log.Ltime | log.Lshortfile
+	errEmptyResults    = errors.New("no matching entry was found")
+	errMultipleMatches = errors.New("multiple entries matched the query")
 )
 
 // checkEntryInKeychain executes a search in the current keychain. The search configured to not
@@ -94,8 +99,12 @@ func passwordFromKeychain(label string) (string, error) {
 		return "", err
 	}
 
+	if len(results) == 0 {
+		return "", errEmptyResults
+	}
+
 	if len(results) > 1 {
-		return "", fmt.Errorf("multiple passwords matched the query")
+		return "", errMultipleMatches
 	}
 
 	return string(results[0].Data), nil
@@ -120,8 +129,8 @@ func storePasswordInKeychain(label, keyInfo string, pin []byte) error {
 	return nil
 }
 
-// askForPassword uses the default pinentry-mac program for getting the password from the user
-func askForPassword(s pinentry.Settings) ([]byte, error) {
+// passwordPrompt uses the default pinentry-mac program for getting the password from the user
+func passwordPrompt(s pinentry.Settings) ([]byte, error) {
 	p, err := pinentryBinary.New()
 	if err != nil {
 		return []byte{}, fmt.Errorf("failed to start %q: %w", pinentryBinary.GetBinary(), err)
@@ -146,9 +155,10 @@ func askForPassword(s pinentry.Settings) ([]byte, error) {
 }
 
 type AuthFunc func(reason string) (bool, error)
+type PromptFunc func(s pinentry.Settings) ([]byte, error)
 type GetPinFunc func(pinentry.Settings) (string, *common.Error)
 
-func GetPIN(fn AuthFunc, logger *log.Logger) GetPinFunc {
+func GetPIN(authFn AuthFunc, promptFn PromptFunc, logger *log.Logger) GetPinFunc {
 	return func(s pinentry.Settings) (string, *common.Error) {
 		matches := emailRegex.FindStringSubmatch(s.Desc)
 		name := strings.Split(matches[1], " <")[0]
@@ -176,7 +186,7 @@ func GetPIN(fn AuthFunc, logger *log.Logger) GetPinFunc {
 		// Currently I'm not aware of a way for automatically adding our binary to the list of always
 		// allowed apps, see: https://github.com/keybase/go-keychain/issues/54.
 		if !exists {
-			pin, err := askForPassword(s)
+			pin, err := promptFn(s)
 			if err != nil {
 				logger.Printf("Error calling pinentry-mac: %s", err)
 			}
@@ -215,7 +225,7 @@ func GetPIN(fn AuthFunc, logger *log.Logger) GetPinFunc {
 		}
 
 		var ok bool
-		if ok, err = fn(fmt.Sprintf("access the PIN for %s", keychainLabel)); err != nil {
+		if ok, err = authFn(fmt.Sprintf("access the PIN for %s", keychainLabel)); err != nil {
 			logger.Fatalf("Error authenticating with Touch ID: %s", err)
 
 			return "", nil
@@ -275,7 +285,7 @@ func main() {
 		GetPIN: func(s pinentry.Settings) (string, *common.Error) {
 			return GetPIN(func(reason string) (bool, error) {
 				return touchid.Authenticate(reason)
-			}, logger)(s)
+			}, passwordPrompt, logger)(s)
 		},
 		Confirm: Confirm,
 		Msg:     Msg,

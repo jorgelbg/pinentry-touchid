@@ -20,6 +20,12 @@ created 2021-01-01 (main key ID 70D56DF4CA30DE16).
 	keyInfo = "n/8043823CBC5C5A0C66866520F333076D"
 )
 
+var (
+	failedAuthFn     = func(reason string) (bool, error) { return false, nil }
+	successfulAuthFn = func(reason string) (bool, error) { return true, nil }
+	dummyPrompt      = func(s pinentry.Settings) ([]byte, error) { return []byte{}, nil }
+)
+
 func TestStoreEntryInKeychain(t *testing.T) {
 	err := storePasswordInKeychain("sampleLabel", "keyInfo", []byte(testPassword))
 
@@ -65,7 +71,7 @@ func TestGetPINSuccessfulAuthentication(t *testing.T) {
 	logger := &log.Logger{}
 	logger.SetOutput(ioutil.Discard)
 
-	fn := GetPIN(func(reason string) (bool, error) { return true, nil }, logger)
+	fn := GetPIN(successfulAuthFn, dummyPrompt, logger)
 	pass, pinErr := fn(params)
 
 	if pinErr != nil {
@@ -93,15 +99,55 @@ func TestGetPINUnsuccessfulAuthentication(t *testing.T) {
 		t.Fatalf("failed precreating entry in the Keychain: %s", err)
 	}
 
-	fn := GetPIN(func(reason string) (bool, error) { return false, nil }, logger)
+	fn := GetPIN(failedAuthFn, dummyPrompt, logger)
 	pass, pinErr := fn(params)
 
 	if pinErr != nil {
-		t.Fatalf("call to GetPIN should succeed: %s", err)
+		t.Fatalf("call to GetPIN should succeed: %s", pinErr)
 	}
 
 	if pass != emptyPassword {
 		t.Fatalf("password mismatch got: %s want: %s", pass, testPassword)
+	}
+}
+
+func TestEntryNotInKeychain(t *testing.T) {
+	keychainLabel := `Firstname Lastname <test@email.com> (61AF059BD632F971)`
+	defer func() { _ = cleanKeychain(keychainLabel) }()
+
+	logger := log.New(ioutil.Discard, "", 0)
+	params := pinentry.Settings{
+		Desc:    keyDesc,
+		KeyInfo: keyInfo,
+	}
+
+	// initially the entry for the test key is not in the keychain
+	if pass, err := passwordFromKeychain(keychainLabel); err == nil || pass != "" {
+		t.Fatalf("unexpected entry found in the keychain: %s", keychainLabel)
+	}
+
+	fallBack := false
+	validPinFn := func(s pinentry.Settings) ([]byte, error) {
+		fallBack = true
+		return []byte(testPassword), nil
+	}
+	fn := GetPIN(successfulAuthFn, validPinFn, logger)
+	pass, pinErr := fn(params)
+	if pinErr != nil {
+		t.Fatalf("call to GetPIN should succeed: %s", pinErr)
+	}
+
+	if !fallBack {
+		t.Fatalf("the fallback password prompt should have been called")
+	}
+
+	if pass != testPassword {
+		t.Fatalf("password mismatch got: %s want: %s", pass, testPassword)
+	}
+
+	// after the successful run of GetPIN the entry should be present in the keychain
+	if pass, err := passwordFromKeychain(keychainLabel); err != nil || pass == "" {
+		t.Fatalf("missing entry from the keychain: %s", keychainLabel)
 	}
 }
 
