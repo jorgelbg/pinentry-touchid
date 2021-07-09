@@ -1,6 +1,4 @@
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/foxcpp/go-assuan v1.0.0 h1:KDSEmEGdHOzOjKmFUoaX/FGk1NxG/mHNAIdyksM8e4A=
-github.com/foxcpp/go-assuan v1.0.0/go.mod h1:dQEJ9EaSSrUjd/g2PVaVEuV0TaoMDGwoh9XIDH1Q/Sc=
 github.com/gopasspw/pinentry v0.0.2 h1:6OmkoTYMU05PmAJSIZSRjjhiQX15AstdgNa2KimH5XA=
 github.com/gopasspw/pinentry v0.0.2/go.mod h1:lR1WuNI96rXXBCgM601Ima3acnX3ZSPthIAuG6lHa68=
 github.com/keybase/go-keychain v0.0.0-20201121013009-976c83ec27a6 h1:Mj0fhP9dzHKPijsmli/XbXMDKe1/KWy5xKci8e3nmBg=

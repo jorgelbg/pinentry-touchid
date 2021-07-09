@@ -2,6 +2,8 @@ module github.com/jorgelbg/pinentry
 
 go 1.16
 
+replace github.com/foxcpp/go-assuan => ./go-assuan
+
 require (
 	github.com/foxcpp/go-assuan v1.0.0
 	github.com/gopasspw/pinentry v0.0.2
