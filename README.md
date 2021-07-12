@@ -45,3 +45,11 @@ $ defaults write org.gpgtools.common DisableKeychain -bool yes
 This will allow `pinentry-touchid` to create and automatically take ownership of the entry in the
 Keychain. If an entry already exist in the Keychain you need to always allow `pinentry-touchid` to
 access the existing entry.
+
+## Disclaimer
+
+This project does not store the password/pin in the [Secure
+Enclave](https://support.apple.com/en-gb/guide/security/sec59b0b31ff/web) of your device, instead
+uses the normal Keychain entry from
+[pinentry-mac](https://github.com/GPGTools/pinentry/tree/master/macosx) if available, or creates a
+new one.
