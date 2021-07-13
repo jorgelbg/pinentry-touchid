@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/exec"
 	"regexp"
 	"strings"
 
@@ -16,7 +15,18 @@ import (
 	touchid "github.com/lox/go-touchid"
 )
 
+// AuthFunc is a function that runs some check to verify if the caller has access to the Keychain
+// entry
+type AuthFunc func(string) (bool, error)
+
+// PromptFunc is a function that asks a password from the user
+type PromptFunc func(pinentry.Settings) ([]byte, error)
+
+// GetPinFunc is a function that executes the process for getting a password from the Keychain
+type GetPinFunc func(pinentry.Settings) (string, *common.Error)
+
 const (
+	// DefaultLogFilename default name for the log files
 	DefaultLogFilename = "pinentry-touchid.log"
 	DefaultLoggerFlags = log.Ldate | log.Ltime | log.Lshortfile
 )
@@ -25,7 +35,7 @@ var (
 	emailRegex = regexp.MustCompile(`\"(?P<name>.*<(?P<email>.*)>)\"`)
 	keyIDRegex = regexp.MustCompile(`ID (?P<keyId>.*),`)
 	// keyID should be of exactly 8 or 16 characters
-	DefaultLogLocation = fmt.Sprintf("%s/%s", os.TempDir(), DefaultLogFilename)
+	DefaultLogLocation = fmt.Sprintf("/tmp/%s", DefaultLogFilename)
 
 	errEmptyResults    = errors.New("no matching entry was found")
 	errMultipleMatches = errors.New("multiple entries matched the query")
@@ -52,12 +62,13 @@ func checkEntryInKeychain(label string) (bool, error) {
 
 // KeychainClient represents a single instance of a pinentry server
 type KeychainClient struct {
-	logger *log.Logger
+	logger   *log.Logger
+	authFn   AuthFunc
+	promptFn PromptFunc
 }
 
 func New() KeychainClient {
 	var logger *log.Logger
-
 	if _, err := os.Stat(DefaultLogLocation); os.IsNotExist(err) {
 		file, err := os.Create(DefaultLogLocation)
 		if err != nil {
@@ -75,8 +86,12 @@ func New() KeychainClient {
 		logger = log.New(file, "", DefaultLoggerFlags)
 	}
 
+	logger.Print("Ready!")
+
 	return KeychainClient{
-		logger: logger,
+		logger:   logger,
+		promptFn: passwordPrompt,
+		authFn:   touchid.Authenticate,
 	}
 }
 
@@ -137,7 +152,7 @@ func passwordPrompt(s pinentry.Settings) ([]byte, error) {
 	}
 	defer p.Close()
 
-	p.Set("title", "pinentry-mac-touchid PIN Prompt")
+	p.Set("title", "pinentry-touchid PIN Prompt")
 
 	// passthrough the original description that its used for creating the keychain item
 	p.Set("desc", strings.ReplaceAll(s.Desc, "\n", "\\n"))
@@ -154,9 +169,21 @@ func passwordPrompt(s pinentry.Settings) ([]byte, error) {
 	return p.GetPin()
 }
 
-type AuthFunc func(reason string) (bool, error)
-type PromptFunc func(s pinentry.Settings) ([]byte, error)
-type GetPinFunc func(pinentry.Settings) (string, *common.Error)
+func (c KeychainClient) GetPIN() GetPinFunc {
+	return GetPIN(c.authFn, c.promptFn, c.logger)
+}
+
+func (c KeychainClient) Confirm(pinentry.Settings) (bool, *common.Error) {
+	c.logger.Println("Confirm was called!")
+
+	return true, nil
+}
+
+func (c KeychainClient) Msg(pinentry.Settings) *common.Error {
+	c.logger.Println("Msg was called!")
+
+	return nil
+}
 
 func GetPIN(authFn AuthFunc, promptFn PromptFunc, logger *log.Logger) GetPinFunc {
 	return func(s pinentry.Settings) (string, *common.Error) {
@@ -245,51 +272,14 @@ func GetPIN(authFn AuthFunc, promptFn PromptFunc, logger *log.Logger) GetPinFunc
 	}
 }
 
-func Confirm(pinentry.Settings) (bool, *common.Error) {
-	fmt.Println("Confirm was called!")
-
-	return true, nil
-}
-
-func Msg(pinentry.Settings) *common.Error {
-	fmt.Println("Msg was called!")
-
-	return nil
-}
-
 func main() {
-	var logger *log.Logger
-	if _, err := os.Stat(DefaultLogLocation); os.IsNotExist(err) {
-		file, err1 := os.Create(DefaultLogLocation)
-		if err1 != nil {
-			panic(err1)
-		}
-		// new file if it doesn't exist
-		logger = log.New(file, "", log.Ldate|log.Ltime|log.Lshortfile)
-	} else {
-		// append to the existing log file
-		file, err := os.OpenFile(DefaultLogLocation, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0666)
-		if err != nil {
-			panic(err)
-		}
-		logger = log.New(file, "", log.Ldate|log.Ltime|log.Lshortfile)
-	}
-
-	logger.Println("Ready!")
-
-	if _, err := exec.LookPath(pinentryBinary.GetBinary()); err != nil {
-		log.Fatalf("PIN entry program %q not found!", pinentryBinary.GetBinary())
-	}
+	client := New()
 
 	callbacks := pinentry.Callbacks{
-		GetPIN: func(s pinentry.Settings) (string, *common.Error) {
-			return GetPIN(func(reason string) (bool, error) {
-				return touchid.Authenticate(reason)
-			}, passwordPrompt, logger)(s)
-		},
-		Confirm: Confirm,
-		Msg:     Msg,
+		GetPIN:  client.GetPIN(),
+		Confirm: client.Confirm,
+		Msg:     client.Msg,
 	}
 
-	pinentry.Serve(callbacks, "Hi from pinentry-mac-touchid!")
+	pinentry.Serve(callbacks, "Hi from pinentry-touchid!")
 }
