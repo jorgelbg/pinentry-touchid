@@ -1,0 +1,33 @@
+project_name: pinentry-touchid
+
+before:
+  hooks:
+    - go mod download
+
+builds:
+  -
+    main: ./main.go
+    binary: pinentry-touchid
+    goos:
+      - darwin
+    goarch:
+      - amd64
+      # - arm64
+    mod_timestamp: '{{ .CommitTimestamp }}'
+
+archives:
+- replacements:
+    darwin: macos
+
+checksum:
+  name_template: 'checksums.txt'
+
+snapshot:
+  name_template: "{{ .Tag }}-next"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+    - '^docs:'
+    - '^test:'
