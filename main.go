@@ -28,13 +28,13 @@ type GetPinFunc func(pinentry.Settings) (string, *common.Error)
 const (
 	// DefaultLogFilename default name for the log files
 	DefaultLogFilename = "pinentry-touchid.log"
-	DefaultLoggerFlags = log.Ldate | log.Ltime | log.Lshortfile
+	defaultLoggerFlags = log.Ldate | log.Ltime | log.Lshortfile
 )
 
 var (
 	emailRegex = regexp.MustCompile(`\"(?P<name>.*<(?P<email>.*)>)\"`)
-	keyIDRegex = regexp.MustCompile(`ID (?P<keyId>.*),`)
-	// keyID should be of exactly 8 or 16 characters
+	keyIDRegex = regexp.MustCompile(`ID (?P<keyId>.*),`) // keyID should be of exactly 8 or 16 characters
+	// DefaultLogLocation is the location of the log file
 	DefaultLogLocation = fmt.Sprintf("/tmp/%s", DefaultLogFilename)
 
 	errEmptyResults    = errors.New("no matching entry was found")
@@ -67,6 +67,9 @@ type KeychainClient struct {
 	promptFn PromptFunc
 }
 
+// New returns a new instance of KeychainClient with some sane defaults, a logger automatically
+// configured, an authFn that invokes Touch ID and a promptFn that fallbacks to the pinentry-mac
+// program.
 func New() KeychainClient {
 	var logger *log.Logger
 	if _, err := os.Stat(DefaultLogLocation); os.IsNotExist(err) {
@@ -75,7 +78,7 @@ func New() KeychainClient {
 			panic("Couldn't create log file")
 		}
 
-		logger = log.New(file, "", DefaultLoggerFlags)
+		logger = log.New(file, "", defaultLoggerFlags)
 	} else {
 		// append to the existing log file
 		file, err := os.OpenFile(DefaultLogLocation, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0666)
@@ -83,7 +86,7 @@ func New() KeychainClient {
 			panic(err)
 		}
 
-		logger = log.New(file, "", DefaultLoggerFlags)
+		logger = log.New(file, "", defaultLoggerFlags)
 	}
 
 	logger.Print("Ready!")
@@ -95,9 +98,12 @@ func New() KeychainClient {
 	}
 }
 
+// WithLogger allows to create a new instance of KeychainClient with a custom logger
 func WithLogger(logger *log.Logger) KeychainClient {
 	return KeychainClient{
-		logger: logger,
+		logger:   logger,
+		promptFn: passwordPrompt,
+		authFn:   touchid.Authenticate,
 	}
 }
 
@@ -169,22 +175,26 @@ func passwordPrompt(s pinentry.Settings) ([]byte, error) {
 	return p.GetPin()
 }
 
-func (c KeychainClient) GetPIN() GetPinFunc {
-	return GetPIN(c.authFn, c.promptFn, c.logger)
+// GetPIN executes the main logic for returning a password/pin back to the gpg-agent
+func (c KeychainClient) GetPIN(s pinentry.Settings) (string, *common.Error) {
+	return GetPIN(c.authFn, c.promptFn, c.logger)(s)
 }
 
+// Confirm Asks for confirmation, not implemented.
 func (c KeychainClient) Confirm(pinentry.Settings) (bool, *common.Error) {
 	c.logger.Println("Confirm was called!")
 
 	return true, nil
 }
 
+// Msg shows a message, not implemented.
 func (c KeychainClient) Msg(pinentry.Settings) *common.Error {
 	c.logger.Println("Msg was called!")
 
 	return nil
 }
 
+// GetPIN executes the main logic for returning a password/pin back to the gpg-agent
 func GetPIN(authFn AuthFunc, promptFn PromptFunc, logger *log.Logger) GetPinFunc {
 	return func(s pinentry.Settings) (string, *common.Error) {
 		matches := emailRegex.FindStringSubmatch(s.Desc)
@@ -276,7 +286,7 @@ func main() {
 	client := New()
 
 	callbacks := pinentry.Callbacks{
-		GetPIN:  client.GetPIN(),
+		GetPIN:  client.GetPIN,
 		Confirm: client.Confirm,
 		Msg:     client.Msg,
 	}
