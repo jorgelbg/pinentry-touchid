@@ -6,9 +6,11 @@ package main
 
 import (
 	"errors"
+	"flag"
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 	"regexp"
 	"strings"
 
@@ -43,6 +45,8 @@ var (
 
 	errEmptyResults    = errors.New("no matching entry was found")
 	errMultipleMatches = errors.New("multiple entries matched the query")
+
+	check = flag.Bool("check", false, "Verify that pinentry-mac is present in the system")
 )
 
 // checkEntryInKeychain executes a search in the current keychain. The search configured to not
@@ -287,6 +291,18 @@ func GetPIN(authFn AuthFunc, promptFn PromptFunc, logger *log.Logger) GetPinFunc
 }
 
 func main() {
+	flag.Parse()
+
+	if *check {
+		if _, err := exec.LookPath(pinentryBinary.GetBinary()); err != nil {
+			log.Fatalf("PIN entry program %q not found!", pinentryBinary.GetBinary())
+			os.Exit(-1)
+		}
+
+		log.Print("Looks good!")
+		os.Exit(0)
+	}
+
 	client := New()
 
 	callbacks := pinentry.Callbacks{
