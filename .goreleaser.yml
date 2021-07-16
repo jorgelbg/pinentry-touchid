@@ -12,8 +12,42 @@ builds:
       - darwin
     goarch:
       - amd64
+      # arm64/m1 macs are currently unsupported see
+      # https://github.com/jorgelbg/pinentry-touchid/issues/3
       # - arm64
     mod_timestamp: '{{ .CommitTimestamp }}'
+
+# Generate/update a homebrew formula
+brews:
+  -
+    tap:
+      owner: jorgelbg
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+
+    homepage: "https://github.com/jorgelbg/pinentry-touchid"
+
+    caveats: |
+      ✅ Add the following line to your ~/.gnupg/gpg-agent.conf file:
+            pinentry-program #{bin}/pinentry-touchid
+
+      ✅ Then reload your gpg-agent:
+            gpg-connect-agent reloadagent /bye
+
+    description: |
+      Custom GPG pinentry program for macOS that allows using Touch ID for fetching the password from
+      the macOS keychain.
+
+    # Packages your package depends on.
+    dependencies:
+      - pinentry-mac
+      - pinentry
+
+    install: |
+      bin.install "pinentry-touchid"
+
+    test: |
+      system "#{bin}/pinentry-touchid -check"
 
 archives:
 - replacements:
@@ -31,3 +65,4 @@ changelog:
     exclude:
     - '^docs:'
     - '^test:'
+    - '^ci:'
