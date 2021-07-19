@@ -7,18 +7,18 @@ macOS keychain.
 
 This program interacts with the `gpg-agent` for providing a password, using the following rules:
 
-- If the password entry for given key cannot be found in the Keychain we fallback to the
+- If the password entry for the given key cannot be found in the Keychain we fallback to the
   `pinentry-mac` program to get the password. We recommend preventing `pinentry-mac` from storing the
   password: uncheck the <kbd>Save in keychain</kbd> checkbox in the dialog.
 
 - If a password entry is found the user will be shown the Touch ID dialog and upon successful
-  authentication the password stored from the keychain will be return back to gpg-agent.
+  authentication the password stored from the keychain will be returned to the gpg-agent.
 
 - If a password entry is found but is not "owned" by the `pinentry-touchid` program after the
-  successful authentication in the Touch ID dialog a normal password will be shown. This is an extra
-  step enforced by the macOS keychain. In this dialog click <kbd>Always allow</kbd> after entering
-  the password. This will allow `pinentry-touchid` to access the password entry without the need to
-  type the additional password, but still the access to the password will be guarded by Touch ID.
+  successful authentication with Touch ID, a normal password will be shown. This is an extra step
+  enforced by the macOS keychain. In this dialog click <kbd>Always allow</kbd> after entering the
+  password. This will allow `pinentry-touchid` to access the password entry without the need to type
+  the additional password, but still, the access to the password will be guarded by Touch ID.
 
 ## Installation
 
@@ -35,7 +35,7 @@ You can replace `/usr/local/bin/pinentry-touchid` with the path where the binary
 
 ## Configuration
 
-We recommend to disable the option to store the password in the macOS Keychain for the default
+We recommend disabling the option to store the password in the macOS Keychain for the default
 pinentry-mac program with the following option:
 
 ```sh
@@ -43,7 +43,7 @@ $ defaults write org.gpgtools.common DisableKeychain -bool yes
 ```
 
 This will allow `pinentry-touchid` to create and automatically take ownership of the entry in the
-Keychain. If an entry already exist in the Keychain you need to always allow `pinentry-touchid` to
+Keychain. If an entry already exists in the Keychain you need to always allow `pinentry-touchid` to
 access the existing entry.
 
 ## Disclaimer
