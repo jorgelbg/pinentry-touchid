@@ -11,6 +11,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -41,7 +42,7 @@ var (
 	emailRegex = regexp.MustCompile(`\"(?P<name>.*<(?P<email>.*)>)\"`)
 	keyIDRegex = regexp.MustCompile(`ID (?P<keyId>.*),`) // keyID should be of exactly 8 or 16 characters
 	// DefaultLogLocation is the location of the log file
-	DefaultLogLocation = fmt.Sprintf("/tmp/%s", DefaultLogFilename)
+	DefaultLogLocation = filepath.Join(filepath.Clean("/tmp"), DefaultLogFilename)
 
 	errEmptyResults    = errors.New("no matching entry was found")
 	errMultipleMatches = errors.New("multiple entries matched the query")
@@ -80,8 +81,9 @@ type KeychainClient struct {
 // program.
 func New() KeychainClient {
 	var logger *log.Logger
-	if _, err := os.Stat(DefaultLogLocation); os.IsNotExist(err) {
-		file, err := os.Create(DefaultLogLocation)
+	path := filepath.Clean(DefaultLogLocation)
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		file, err := os.Create(path)
 		if err != nil {
 			panic("Couldn't create log file")
 		}
@@ -89,7 +91,7 @@ func New() KeychainClient {
 		logger = log.New(file, "", defaultLoggerFlags)
 	} else {
 		// append to the existing log file
-		file, err := os.OpenFile(DefaultLogLocation, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0666)
+		file, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
 		if err != nil {
 			panic(err)
 		}
@@ -311,5 +313,7 @@ func main() {
 		Msg:     client.Msg,
 	}
 
-	pinentry.Serve(callbacks, "Hi from pinentry-touchid!")
+	if err := pinentry.Serve(callbacks, "Hi from pinentry-touchid!"); err != nil {
+		log.Fatalf("Pinentry Serve returned error: %v", err)
+	}
 }
