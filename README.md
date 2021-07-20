@@ -22,6 +22,31 @@ This program interacts with the `gpg-agent` for providing a password, using the 
 
 ## Installation
 
+### Homebrew
+
+As part of our release process we keep an updated Homebrew Formula. To install pinentry-touchid using
+homebrew execute the following commands:
+
+```bash
+❯ brew tap jorgelbg/tap
+❯ brew install pinentry-touchid
+```
+
+Homebrew will print the print the next steps, which will look similar to:
+
+```
+==> Caveats
+✅ Add the following line to your ~/.gnupg/gpg-agent.conf file:
+      pinentry-program /usr/local/opt/pinentry-touchid/bin/pinentry-touchid
+
+🔄 Then reload your gpg-agent:
+      gpg-connect-agent reloadagent /bye
+==> Summary
+🍺  /usr/local/Cellar/pinentry-touchid/0.0.2: 4 files, 2.2MB, built in 10 seconds
+```
+
+### Manual
+
 - Download the `pinentry-touchid` binary from our Releases page
 
 - Configure the `gpg-agent` to use `pinentry-touchid` as its pinentry program. Add or replace the
