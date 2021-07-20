@@ -8,13 +8,13 @@ builds:
   -
     main: ./main.go
     binary: pinentry-touchid
+    env:
+      - CGO_ENABLED=1
     goos:
       - darwin
     goarch:
       - amd64
-      # arm64/m1 macs are currently unsupported see
-      # https://github.com/jorgelbg/pinentry-touchid/issues/3
-      # - arm64
+      - arm64
     mod_timestamp: '{{ .CommitTimestamp }}'
 
 # Generate/update a homebrew formula
