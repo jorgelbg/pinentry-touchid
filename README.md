@@ -32,7 +32,7 @@ homebrew execute the following commands:
 ❯ brew install pinentry-touchid
 ```
 
-Homebrew will print the print the next steps, which will look similar to:
+Homebrew will print the next steps, which will look similar to:
 
 ```
 ==> Caveats

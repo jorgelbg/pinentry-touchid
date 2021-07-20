@@ -31,7 +31,7 @@ brews:
       ✅ Add the following line to your ~/.gnupg/gpg-agent.conf file:
             pinentry-program #{bin}/pinentry-touchid
 
-      ✅ Then reload your gpg-agent:
+      🔄 Then reload your gpg-agent:
             gpg-connect-agent reloadagent /bye
 
     description: |
