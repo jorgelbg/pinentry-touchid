@@ -1,6 +1,8 @@
 // Copyright (c) 2021 Jorge Luis Betancourt. All rights reserved.
 // Use of this source code is governed by the Apache License, Version 2.0
 // that can be found in the LICENSE file.
+//
+// +build darwin,cgo
 
 package main
 
