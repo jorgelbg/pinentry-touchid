@@ -20,6 +20,7 @@ import (
 	"github.com/foxcpp/go-assuan/common"
 	"github.com/foxcpp/go-assuan/pinentry"
 	pinentryBinary "github.com/gopasspw/pinentry"
+	"github.com/jorgelbg/pinentry/sensor"
 	"github.com/keybase/go-keychain"
 	touchid "github.com/lox/go-touchid"
 )
@@ -296,6 +297,10 @@ func GetPIN(authFn AuthFunc, promptFn PromptFunc, logger *log.Logger) GetPinFunc
 
 func main() {
 	flag.Parse()
+
+	if !sensor.IsTouchIDAvailable() {
+		log.Fatal("pientry-touchid does not support devices without a Touch ID sensor!")
+	}
 
 	if *check {
 		if _, err := exec.LookPath(pinentryBinary.GetBinary()); err != nil {
