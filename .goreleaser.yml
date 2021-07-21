@@ -28,11 +28,18 @@ brews:
     homepage: "https://github.com/jorgelbg/pinentry-touchid"
 
     caveats: |
-      ✅ Add the following line to your ~/.gnupg/gpg-agent.conf file:
+      ✅  Add the following line to your ~/.gnupg/gpg-agent.conf file:
             pinentry-program #{bin}/pinentry-touchid
 
-      🔄 Then reload your gpg-agent:
+      🔄  Then reload your gpg-agent:
             gpg-connect-agent reloadagent /bye
+
+      🔑  Run the following command to disable "Save in Keychain" in pinentry-mac:
+            defaults write org.gpgtools.common DisableKeychain -bool yes
+
+      ⛔️  If you are upgrading from a previous version, you will be asked to give
+          access again to the keychain entry. Click "Always Allow" after the
+          Touch ID verification to prevent this dialog from showing.
 
     description: |
       Custom GPG pinentry program for macOS that allows using Touch ID for fetching the password from
