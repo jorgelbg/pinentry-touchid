@@ -299,7 +299,7 @@ func main() {
 	flag.Parse()
 
 	if !sensor.IsTouchIDAvailable() {
-		log.Fatal("pientry-touchid does not support devices without a Touch ID sensor!")
+		log.Fatal("pinentry-touchid does not support devices without a Touch ID sensor!")
 	}
 
 	if *check {

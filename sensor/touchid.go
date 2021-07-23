@@ -27,14 +27,8 @@ import (
 	"C"
 )
 
-import "fmt"
-
 func IsTouchIDAvailable() bool {
 	result := C.isTouchIDAvailable()
 
 	return result == 1
-}
-
-func main() {
-	fmt.Printf("%+v\n", IsTouchIDAvailable())
 }
