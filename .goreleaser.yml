@@ -73,3 +73,5 @@ changelog:
     - '^docs:'
     - '^test:'
     - '^ci:'
+    - '^dev:'
+    - '^env:'
