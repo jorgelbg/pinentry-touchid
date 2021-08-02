@@ -1,7 +1,7 @@
 # pinentry-touchid
 
 <p align="center">
-    <img class="center" src="https://user-images.githubusercontent.com/1291846/127484944-13ec25e4-886a-4c31-8008-45a3ee8db547.png" width="300" alt="pinentry-touchid logo"/>
+    <img class="center" src="https://user-images.githubusercontent.com/1291846/127916161-5803ca98-c0a2-4d1f-8479-860f4d7edc98.png" width="300" alt="pinentry-touchid logo"/>
 </p>
 
 Custom GPG pinentry program for macOS that allows using Touch ID for fetching the password from the
