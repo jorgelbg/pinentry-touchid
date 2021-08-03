@@ -8,7 +8,7 @@ Custom GPG pinentry program for macOS that allows using Touch ID for fetching th
 macOS keychain.
 
 > Macbook Pro devices without Touch ID are currently not supported. These devices > lack a Touch ID
-> sensor and while the alternative offered by Apple is to use (if available) an > Apple Watch, this
+> sensor and while the alternative offered by Apple is to use (if available) an Apple Watch, this
 > feature it is not yet implemented.
 
 ## How does it work

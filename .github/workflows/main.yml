@@ -9,6 +9,7 @@ on:
 jobs:
   # Run tests.
   test:
+    if: ${{ !contains(github.event.head_commit.message, 'docs') }}
     strategy:
       matrix:
         go-version: [1.16.x]
