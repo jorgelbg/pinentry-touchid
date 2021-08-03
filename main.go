@@ -188,9 +188,22 @@ func passwordPrompt(s pinentry.Settings) ([]byte, error) {
 	return p.GetPin()
 }
 
+func assuanError(err error) *common.Error {
+	return &common.Error{
+		Src:     common.ErrSrcPinentry,
+		SrcName: "pinentry",
+		Code:    common.ErrCanceled,
+		Message: err.Error(),
+	}
+}
+
 // GetPIN executes the main logic for returning a password/pin back to the gpg-agent
 func (c KeychainClient) GetPIN(s pinentry.Settings) (string, *common.Error) {
-	return GetPIN(c.authFn, c.promptFn, c.logger)(s)
+	if len(s.Error) == 0 && len(s.RepeatPrompt) == 0 && s.Opts.AllowExtPasswdCache && len(s.KeyInfo) != 0 {
+		return GetPIN(c.authFn, c.promptFn, c.logger)(s)
+	}
+
+	return "", nil
 }
 
 // Confirm Asks for confirmation, not implemented.
@@ -217,13 +230,15 @@ func GetPIN(authFn AuthFunc, promptFn PromptFunc, logger *log.Logger) GetPinFunc
 		matches = keyIDRegex.FindStringSubmatch(s.Desc)
 		keyID := matches[1]
 		if len(keyID) != 8 && len(keyID) != 16 {
-			logger.Fatalf("Invalid keyID: %s", keyID)
+			logger.Printf("Invalid keyID: %s", keyID)
+			return "", assuanError(fmt.Errorf("invalid keyID: %s", keyID))
 		}
 
 		keychainLabel := fmt.Sprintf("%s <%s> (%s)", name, email, keyID)
 		exists, err := checkEntryInKeychain(keychainLabel)
 		if err != nil {
-			logger.Fatalf("error checking entry in keychain: %s", err)
+			logger.Printf("error checking entry in keychain: %s", err)
+			return "", assuanError(err)
 		}
 
 		// If the entry is not found in the keychain, we trigger `pinentry-mac` with the option
@@ -242,7 +257,8 @@ func GetPIN(authFn AuthFunc, promptFn PromptFunc, logger *log.Logger) GetPinFunc
 			}
 
 			if len(pin) == 0 {
-				logger.Fatalf("pinentry-mac didn't return a password")
+				logger.Printf("pinentry-mac didn't return a password")
+				return "", assuanError(fmt.Errorf("pinentry-mac didn't return a password"))
 			}
 
 			// s.KeyInfo is always in the form of x/cacheId
@@ -256,7 +272,8 @@ func GetPIN(authFn AuthFunc, promptFn PromptFunc, logger *log.Logger) GetPinFunc
 			// guarded by Touch ID.
 			exists, err = checkEntryInKeychain(keychainLabel)
 			if err != nil {
-				logger.Fatalf("error checking entry in keychain: %s", err)
+				logger.Printf("error checking entry in keychain: %s", err)
+				return "", assuanError(err)
 			}
 
 			if !exists {
@@ -265,7 +282,8 @@ func GetPIN(authFn AuthFunc, promptFn PromptFunc, logger *log.Logger) GetPinFunc
 				err = storePasswordInKeychain(keychainLabel, keyInfo, pin)
 
 				if err == keychain.ErrorDuplicateItem {
-					logger.Fatalf("Duplicated entry in the keychain")
+					logger.Printf("Duplicated entry in the keychain")
+					return "", assuanError(err)
 				}
 			} else {
 				logger.Printf("The keychain entry was created by pinentry-mac. Permission will be required on next run.")
@@ -276,9 +294,8 @@ func GetPIN(authFn AuthFunc, promptFn PromptFunc, logger *log.Logger) GetPinFunc
 
 		var ok bool
 		if ok, err = authFn(fmt.Sprintf("access the PIN for %s", keychainLabel)); err != nil {
-			logger.Fatalf("Error authenticating with Touch ID: %s", err)
-
-			return "", nil
+			logger.Printf("Error authenticating with Touch ID: %s", err)
+			return "", assuanError(err)
 		}
 
 		if !ok {
