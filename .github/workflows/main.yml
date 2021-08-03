@@ -24,5 +24,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
+      - name: Create Keychain
+        uses: sinoru/actions-setup-keychain@v1.0
+        # run: fastlane create_keychain name:test password:test default_keychain:true unlock:true
+
       - name: Test
         run: go test ./...
