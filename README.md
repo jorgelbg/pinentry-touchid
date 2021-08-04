@@ -11,6 +11,11 @@ macOS keychain.
 > sensor and while the alternative offered by Apple is to use (if available) an Apple Watch, this
 > feature it is not yet implemented.
 
+## See it in action
+
+ ![pinentry-touchid in action with gopass](https://user-images.githubusercontent.com/1291846/128176593-271ac649-5207-41f2-83da-3fb3d37ede9c.gif)
+
+
 ## How does it work
 
 This program interacts with the `gpg-agent` for providing a password, using the following rules:
