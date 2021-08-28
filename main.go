@@ -2,6 +2,7 @@
 // Use of this source code is governed by the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 //
+//go:build darwin && cgo
 // +build darwin,cgo
 
 package main
@@ -316,16 +317,17 @@ func main() {
 	flag.Parse()
 
 	if !sensor.IsTouchIDAvailable() {
-		log.Fatal("pinentry-touchid does not support devices without a Touch ID sensor!")
+		fmt.Fprintf(os.Stderr, "pinentry-touchid does not support devices without a Touch ID sensor!")
+		os.Exit(-1)
 	}
 
 	if *check {
 		if _, err := exec.LookPath(pinentryBinary.GetBinary()); err != nil {
-			log.Fatalf("PIN entry program %q not found!", pinentryBinary.GetBinary())
+			fmt.Fprintf(os.Stderr, "PIN entry program %q not found!", pinentryBinary.GetBinary())
 			os.Exit(-1)
 		}
 
-		log.Print("Looks good!")
+		fmt.Printf("Looks good!")
 		os.Exit(0)
 	}
 
@@ -338,6 +340,7 @@ func main() {
 	}
 
 	if err := pinentry.Serve(callbacks, "Hi from pinentry-touchid!"); err != nil {
-		log.Fatalf("Pinentry Serve returned error: %v", err)
+		fmt.Fprintf(os.Stderr, "Pinentry Serve returned error: %v", err)
+		os.Exit(-1)
 	}
 }
