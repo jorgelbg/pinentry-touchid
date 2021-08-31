@@ -27,6 +27,7 @@ import (
 	"C"
 )
 
+// IsTouchIDAvailable checks if Touch ID is available in the current device
 func IsTouchIDAvailable() bool {
 	result := C.isTouchIDAvailable()
 
