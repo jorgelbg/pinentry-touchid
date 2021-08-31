@@ -18,10 +18,11 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/enescakir/emoji"
 	"github.com/foxcpp/go-assuan/common"
 	"github.com/foxcpp/go-assuan/pinentry"
 	pinentryBinary "github.com/gopasspw/pinentry"
-	"github.com/jorgelbg/pinentry/sensor"
+	"github.com/jorgelbg/pinentry-touchid/sensor"
 	"github.com/keybase/go-keychain"
 	touchid "github.com/lox/go-touchid"
 )
@@ -315,19 +316,19 @@ func GetPIN(authFn AuthFunc, promptFn PromptFunc, logger *log.Logger) GetPinFunc
 
 func main() {
 	flag.Parse()
-
 	if !sensor.IsTouchIDAvailable() {
-		fmt.Fprintf(os.Stderr, "pinentry-touchid does not support devices without a Touch ID sensor!")
+		fmt.Fprintf(os.Stderr,
+			"%v pinentry-touchid does not support devices without a Touch ID sensor!\n", emoji.CrossMark)
 		os.Exit(-1)
 	}
 
 	if *check {
 		if _, err := exec.LookPath(pinentryBinary.GetBinary()); err != nil {
-			fmt.Fprintf(os.Stderr, "PIN entry program %q not found!", pinentryBinary.GetBinary())
+			fmt.Fprintf(os.Stderr, "PIN entry program %q not found!\n", pinentryBinary.GetBinary())
 			os.Exit(-1)
 		}
 
-		fmt.Printf("Looks good!")
+		fmt.Printf("%v Looks good!\n", emoji.CheckMarkButton)
 		os.Exit(0)
 	}
 
@@ -340,7 +341,7 @@ func main() {
 	}
 
 	if err := pinentry.Serve(callbacks, "Hi from pinentry-touchid!"); err != nil {
-		fmt.Fprintf(os.Stderr, "Pinentry Serve returned error: %v", err)
+		fmt.Fprintf(os.Stderr, "Pinentry Serve returned error: %v\n", err)
 		os.Exit(-1)
 	}
 }
