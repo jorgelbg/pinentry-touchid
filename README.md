@@ -80,6 +80,65 @@ You can replace `/usr/local/bin/pinentry-touchid` with the path where the binary
 
 ## Configuration
 
+First, ensure pinentry-mac is already using the Keychain:
+
+```sh
+$ security find-generic-password -s 'GnuPG'
+```
+
+You should get a big list of attributes.
+If you get an error, such as the following, it means pinentry-mac is not configured to use the Keychain:
+
+```
+security: SecKeychainSearchCopyNext: The specified item could not be found in the keychain.
+```
+
+If you do not see this error, skip ahead to [Configuring pinentry-touchid](#configuring-pinentry-touchid).
+
+### Configuring pinentry-mac
+
+Before configuring pinentry-touchid, you should configure pinentry-mac to use the Keychain at least once:
+
+```sh
+$ defaults write org.gpgtools.common UseKeychain -bool yes
+```
+
+Note that there are two defaults which are the reverse of each other.
+This one, `UseKeychain`, should be set to `yes` or `true`.
+
+Ensure the `pinentry-program` entry in your `~/.gnupg/gpg-agent.conf` points to pinentry-mac, then restart the GPG Agent:
+
+```sh
+$ gpgconf --kill gpg-agent
+```
+
+Using gpg should then use pinentry-mac to provide a GUI prompt for your GPG passphrase:
+
+```sh
+$ echo 1234 | gpg -as -
+```
+
+Make sure you check the "Save in Keychain" box on the prompt.
+You may then get a second prompt, this time for your login password, to authorize pinentry-mac to create and use the Keychain entry to store your GPG passphrase.
+If so, use "Always Allow" to avoid future prompts.
+
+You should now be able to see the new Keychain entry via the same command as before:
+
+```sh
+$ security find-generic-password -s 'GnuPG'
+```
+
+Continue on to the next section to replace this password prompt with a TouchID prompt.
+
+### Configuring pinentry-touchid
+
+Once your Keychain is configured correctly, you can update your `gpg-agent.conf` with the correct path for `pinentry-program` pointing to the full path to `pinentry-touchid`.
+Remember to restart the GPG Agent each time you make a change to this configuration file:
+
+```sh
+$ gpgconf --kill gpg-agent
+```
+
 We recommend disabling the option to store the password in the macOS Keychain for the default
 pinentry-mac program with the following option:
 
