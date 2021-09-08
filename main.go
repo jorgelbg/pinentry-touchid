@@ -328,6 +328,7 @@ func main() {
 			os.Exit(-1)
 		}
 
+		fmt.Printf("%v %s fallback pinentry found\n", emoji.CheckMarkButton, pinentryBinary.GetBinary())
 		fmt.Printf("%v Looks good!\n", emoji.CheckMarkButton)
 		os.Exit(0)
 	}
