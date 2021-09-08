@@ -255,7 +255,7 @@ func GetPIN(authFn AuthFunc, promptFn PromptFunc, logger *log.Logger) GetPinFunc
 		if !exists {
 			pin, err := promptFn(s)
 			if err != nil {
-				logger.Printf("Error calling pinentry-mac: %s", err)
+				logger.Printf("Error calling pinentry program (%s): %s", pinentryBinary.GetBinary(), err)
 			}
 
 			if len(pin) == 0 {
