@@ -11,6 +11,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io/fs"
 	"log"
 	"os"
 	"os/exec"
@@ -323,9 +324,34 @@ func main() {
 	}
 
 	if *check {
-		if _, err := exec.LookPath(pinentryBinary.GetBinary()); err != nil {
-			fmt.Fprintf(os.Stderr, "PIN entry program %q not found!\n", pinentryBinary.GetBinary())
+		var err error
+		binaryPath := pinentryBinary.GetBinary()
+		if binaryPath, err = exec.LookPath(binaryPath); err != nil {
+			fmt.Fprintf(os.Stderr, "PIN entry program %q not found!\n", binaryPath)
 			os.Exit(-1)
+		}
+
+		// check if the binary is (or resolves to -- if it is a symlink) to pinentry-mac
+		info, err := os.Lstat(binaryPath)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Couldn't lstat file in: %s\n", binaryPath)
+			os.Exit(-1)
+		}
+
+		if info.Mode()&fs.ModeSymlink != 0 {
+			fmt.Printf("%v found symlink .... %s\n", emoji.MagnifyingGlassTiltedRight, binaryPath)
+
+			path, err := filepath.EvalSymlinks(binaryPath)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Couldn't resolve symlink in %s, error: %s", binaryPath, err)
+				os.Exit(-1)
+			}
+
+			if !strings.Contains(path, "pinentry-mac") {
+				fmt.Fprintf(os.Stderr, "%v %s is a symlink that resolves to:\n   %s -- not to pinentry-mac\n",
+					emoji.CrossMark, binaryPath, path)
+				os.Exit(-1)
+			}
 		}
 
 		fmt.Printf("%v %s fallback pinentry found\n", emoji.CheckMarkButton, pinentryBinary.GetBinary())
