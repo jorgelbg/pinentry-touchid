@@ -37,6 +37,16 @@ This program interacts with the `gpg-agent` for providing a password, using the 
 
 ### Homebrew
 
+If you have already installed GPG, make sure that executing `pinentry` shows a GUI prompt by running
+the following command:
+
+```
+echo GETPIN | pinentry
+```
+
+You should get the dialog from `pinentry-mac`. If that is not the case you can overwrite the
+`pinentry` symlink to point to `pinentry-mac`.
+
 As part of our release process we keep an updated Homebrew Formula. To install pinentry-touchid using
 homebrew execute the following commands:
 
