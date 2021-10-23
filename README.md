@@ -35,24 +35,42 @@ This program interacts with the `gpg-agent` for providing a password, using the 
 
 ## Installation
 
-### Homebrew
+### Prerequisites
+
+* [gnupg](https://formulae.brew.sh/formula/gnupg)
+* [pinentry-mac](https://github.com/GPGTools/pinentry-mac)
+
 
 If you have already installed GPG, make sure that executing `pinentry` shows a GUI prompt by running
 the following command:
 
+```sh
+$ echo GETPIN | pinentry
 ```
-echo GETPIN | pinentry
+
+You should get the dialog from [pinentry-mac](https://github.com/GPGTools/pinentry-mac). If that is not the case you can install it though Homebrew:
+
+```sh
+$ brew install pinentry-mac
 ```
 
-You should get the dialog from `pinentry-mac`. If that is not the case you can overwrite the
-`pinentry` symlink to point to `pinentry-mac`.
+You can overwrite the `pinentry` alias to point to `pinentry-mac`:
 
-As part of our release process we keep an updated Homebrew Formula. To install pinentry-touchid using
-homebrew execute the following commands:
+```sh
+$ alias pinentry='pinentry-mac'
+```
 
-```bash
-❯ brew tap jorgelbg/tap
-❯ brew install pinentry-touchid
+_Then try again whether you see a GUI prompt._
+
+### Homebrew
+
+
+As part of our release process we keep an updated Homebrew Formula. To install `pinentry-touchid` using
+Homebrew execute the following commands:
+
+```sh
+$ brew tap jorgelbg/tap
+$ brew install pinentry-touchid
 ```
 
 Homebrew will print the next steps, which will look similar to:
@@ -82,8 +100,8 @@ Homebrew will print the next steps, which will look similar to:
 - Configure the `gpg-agent` to use `pinentry-touchid` as its pinentry program. Add or replace the
   following line to your gpg agent configuration in: `~/.gnupg/gpg-agent.conf`:
 
-```
-pinentry-program /usr/local/bin/pinentry-touchid
+```sh
+$ pinentry-program /usr/local/bin/pinentry-touchid
 ```
 
 You can replace `/usr/local/bin/pinentry-touchid` with the path where the binary was stored.
