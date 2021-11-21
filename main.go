@@ -178,7 +178,6 @@ func passwordPrompt(s pinentry.Settings) ([]byte, error) {
 
 	// passthrough the original description that its used for creating the keychain item
 	p.Set("desc", strings.ReplaceAll(s.Desc, "\n", "\\n"))
-	p.Set("prompt", "Please enter your PIN:")
 
 	// Enable opt-in external PIN caching (in the OS keychain).
 	// https://gist.github.com/mdeguzis/05d1f284f931223624834788da045c65#file-info-pinentry-L324
@@ -187,6 +186,9 @@ func passwordPrompt(s pinentry.Settings) ([]byte, error) {
 	// checkbox, but this is not the case.
 	// p.Option("allow-external-password-cache")
 	p.Set("KEYINFO", s.KeyInfo)
+	p.Set("PROMPT", s.Prompt)
+	p.Set("REPEAT", s.RepeatPrompt)
+	p.Set("REPEATERROR", s.RepeatError)
 
 	return p.GetPin()
 }
@@ -206,12 +208,23 @@ func (c KeychainClient) GetPIN(s pinentry.Settings) (string, *common.Error) {
 		return GetPIN(c.authFn, c.promptFn, c.logger)(s)
 	}
 
-	return "", nil
+	// fallback to pinentry-mac in any other case
+	pin, err := c.promptFn(s)
+	if err != nil {
+		return "", assuanError(err)
+	}
+
+	// TODO(jorge): try to persist automatically in the keychain?
+	return string(pin), nil
 }
 
 // Confirm Asks for confirmation, not implemented.
-func (c KeychainClient) Confirm(pinentry.Settings) (bool, *common.Error) {
+func (c KeychainClient) Confirm(s pinentry.Settings) (bool, *common.Error) {
 	c.logger.Println("Confirm was called!")
+
+	if _, err := c.promptFn(s); err != nil {
+		return false, assuanError(err)
+	}
 
 	return true, nil
 }
