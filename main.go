@@ -45,10 +45,11 @@ const (
 )
 
 var (
+	// DefaultLogLocation is the location of the log file
+	DefaultLogLocation = filepath.Join(filepath.Clean(os.TempDir()), DefaultLogFilename)
+
 	emailRegex = regexp.MustCompile(`\"(?P<name>.*<(?P<email>.*)>)\"`)
 	keyIDRegex = regexp.MustCompile(`ID (?P<keyId>.*),`) // keyID should be of exactly 8 or 16 characters
-	// DefaultLogLocation is the location of the log file
-	DefaultLogLocation = filepath.Join(filepath.Clean("/tmp"), DefaultLogFilename)
 
 	errEmptyResults    = errors.New("no matching entry was found")
 	errMultipleMatches = errors.New("multiple entries matched the query")

@@ -45,4 +45,4 @@ Add/attach the relevant section of the log to this issue (feel free to redact yo
 
 **`pinentry-touchid`:**
 
-`pinentry-touchid` also generates its own log which you can find in `/tmp/pinentry-touchid.log`.
+`pinentry-touchid` also generates its own log which you can find in `$TMPDIR/pinentry-touchid.log`.
