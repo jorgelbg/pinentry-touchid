@@ -28,6 +28,9 @@ brews:
     homepage: "https://github.com/jorgelbg/pinentry-touchid"
 
     caveats: |
+      ➡️  Ensure that pinentry-mac is the default pinentry program:
+            #{bin}/pinentry-touchid -fix
+
       ✅  Add the following line to your ~/.gnupg/gpg-agent.conf file:
             pinentry-program #{bin}/pinentry-touchid
 
@@ -52,9 +55,6 @@ brews:
 
     install: |
       bin.install "pinentry-touchid"
-
-    test: |
-      system "#{bin}/pinentry-touchid -check"
 
 archives:
 - replacements:
