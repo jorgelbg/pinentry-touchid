@@ -54,7 +54,8 @@ var (
 	errEmptyResults    = errors.New("no matching entry was found")
 	errMultipleMatches = errors.New("multiple entries matched the query")
 
-	check = flag.Bool("check", false, "Verify that pinentry-mac is present in the system")
+	check      = flag.Bool("check", false, "Verify that pinentry-mac is present in the system.")
+	fixSymlink = flag.Bool("fix", false, "Set up pinentry-mac as the fallback PIN entry program.")
 )
 
 // checkEntryInKeychain executes a search in the current keychain. The search configured to not
@@ -329,6 +330,59 @@ func GetPIN(authFn AuthFunc, promptFn PromptFunc, logger *log.Logger) GetPinFunc
 	}
 }
 
+// validatePINBinary validates that the pinentry program returned by gpgconf
+// is/points to pinentry-mac
+func validatePINBinary() (string, error) {
+	binaryPath := pinentryBinary.GetBinary()
+	originalPath := binaryPath
+	if _, err := exec.LookPath(binaryPath); err != nil {
+		return binaryPath, errors.New("PIN entry program not found")
+	}
+
+	// check if the binary is (or resolves to -- if it is a symlink) to pinentry-mac
+	info, err := os.Lstat(binaryPath)
+	if err != nil {
+		return binaryPath, fmt.Errorf("Couldn't lstat file: %w", err)
+	}
+
+	if info.Mode()&fs.ModeSymlink != 0 {
+		// the file is a symlink so we check that the resolved path contains
+		// pinentry-mac
+		path, err := filepath.EvalSymlinks(binaryPath)
+		if err != nil {
+			return binaryPath, fmt.Errorf("Couldn't resolve symlink: %w", err)
+		}
+
+		binaryPath = path
+	}
+	if !strings.Contains(binaryPath, "pinentry-mac") {
+		return "", errors.New(
+			fmt.Sprintf("%s is a symlink that resolves to %s not to pinentry-mac",
+				originalPath, binaryPath))
+	}
+
+	return binaryPath, nil
+}
+
+// fixPINBinary forces pinentry-mac as the fallback pinentry program
+func fixPINBinary(oldPath string) error {
+	newPath, err := exec.LookPath("pinentry-mac")
+	if err != nil {
+		return errors.New("pinentry-mac couldn't be found in your PATH")
+	}
+
+	if err := os.Remove(oldPath); err != nil {
+		return fmt.Errorf("Unable to remove symlink: %w", err)
+	}
+
+	// create the new symlink pointing to pinentry-mac
+	if err := os.Symlink(newPath, oldPath); err != nil {
+		return fmt.Errorf("Unable to symlink to pinentry-mac: %w", err)
+	}
+
+	return nil
+}
+
 func main() {
 	flag.Parse()
 	if !sensor.IsTouchIDAvailable() {
@@ -337,39 +391,28 @@ func main() {
 		os.Exit(-1)
 	}
 
+	if *fixSymlink {
+		path := pinentryBinary.GetBinary()
+		if err := fixPINBinary(path); err != nil {
+			fmt.Fprintf(os.Stderr, "%v %s\n", emoji.CrossMark, err)
+			os.Exit(-1)
+		}
+
+		fmt.Fprintf(os.Stderr, "%v %s is now pointing to pinentry-mac\n", emoji.CheckMarkButton, path)
+		os.Exit(0)
+	}
+
 	if *check {
-		var err error
-		binaryPath := pinentryBinary.GetBinary()
-		if binaryPath, err = exec.LookPath(binaryPath); err != nil {
-			fmt.Fprintf(os.Stderr, "PIN entry program %q not found!\n", binaryPath)
-			os.Exit(-1)
-		}
-
-		// check if the binary is (or resolves to -- if it is a symlink) to pinentry-mac
-		info, err := os.Lstat(binaryPath)
+		path, err := validatePINBinary()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Couldn't lstat file in: %s\n", binaryPath)
+			fmt.Fprintf(os.Stderr, "%v %s %s\n", emoji.CrossMark, err, path)
 			os.Exit(-1)
 		}
 
-		if info.Mode()&fs.ModeSymlink != 0 {
-			fmt.Printf("%v found symlink .... %s\n", emoji.MagnifyingGlassTiltedRight, binaryPath)
-
-			path, err := filepath.EvalSymlinks(binaryPath)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "Couldn't resolve symlink in %s, error: %s", binaryPath, err)
-				os.Exit(-1)
-			}
-
-			if !strings.Contains(path, "pinentry-mac") {
-				fmt.Fprintf(os.Stderr, "%v %s is a symlink that resolves to:\n   %s -- not to pinentry-mac\n",
-					emoji.CrossMark, binaryPath, path)
-				os.Exit(-1)
-			}
+		if path != "" {
+			fmt.Fprintf(os.Stdout, "%v %s will be used as a fallback PIN program\n", emoji.CheckMarkButton, path)
 		}
 
-		fmt.Printf("%v %s fallback pinentry found\n", emoji.CheckMarkButton, pinentryBinary.GetBinary())
-		fmt.Printf("%v Looks good!\n", emoji.CheckMarkButton)
 		os.Exit(0)
 	}
 

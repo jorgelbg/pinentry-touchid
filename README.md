@@ -62,6 +62,14 @@ $ alias pinentry='pinentry-mac'
 
 _Then try again whether you see a GUI prompt._
 
+In some cases aliasing `pinentry` to `pinentry-mac` is not enough because `gpgconf` returns the
+absolute path that points to the `$HOMEBREW_PREFIX/opt` path. In that case you can execute the
+following command to automatically fix the symlink.
+
+```sh
+$ pinentry-touchid -fix
+```
+
 ### Homebrew
 
 
@@ -77,11 +85,14 @@ Homebrew will print the next steps, which will look similar to:
 
 ```
 ==> Caveats
+➡️  Ensure that pinentry-mac is the default pinentry program:
+      /usr/local/bin/pinentry-touchid -fix
+
 ✅ Add the following line to your ~/.gnupg/gpg-agent.conf file:
       pinentry-program /usr/local/opt/pinentry-touchid/bin/pinentry-touchid
 
 🔄  Then reload your gpg-agent:
-    gpg-connect-agent reloadagent /bye
+      gpg-connect-agent reloadagent /bye
 
 🔑  Run the following command to disable "Save in Keychain" in pinentry-mac:
     defaults write org.gpgtools.common DisableKeychain -bool yes
@@ -105,6 +116,18 @@ $ pinentry-program /usr/local/bin/pinentry-touchid
 ```
 
 You can replace `/usr/local/bin/pinentry-touchid` with the path where the binary was stored.
+
+Make sure that the `pinentry-mac` is configured to be the default `pinentry` program (will be used
+as fallback). You can check which PIN program will be used by default by executing:
+
+```sh
+$ pinentry-touchid -check
+```
+
+If any error is reported `pinentry-touchid` can automatically fix the symlink for you:
+```sh
+$ pinentry-touchid -fix
+```
 
 ## Configuration
 
