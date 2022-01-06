@@ -62,8 +62,9 @@ $ alias pinentry='pinentry-mac'
 
 _Then try again whether you see a GUI prompt._
 
-In some cases aliasing `pinentry` to `pinentry-mac` is not enough because `gpgconf` which return the
-absolute path that points to the `$HOMEBREW_PREFIX/opt`. In that case you can execute:
+In some cases aliasing `pinentry` to `pinentry-mac` is not enough because `gpgconf` returns the
+absolute path that points to the `$HOMEBREW_PREFIX/opt` path. In that case you can execute the
+following command to automatically fix the symlink.
 
 ```sh
 $ pinentry-touchid -fix
