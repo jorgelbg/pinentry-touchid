@@ -56,6 +56,7 @@ var (
 
 	check      = flag.Bool("check", false, "Verify that pinentry-mac is present in the system.")
 	fixSymlink = flag.Bool("fix", false, "Set up pinentry-mac as the fallback PIN entry program.")
+	_          = flag.String("display", "", "Set the X display (unused)")
 )
 
 // checkEntryInKeychain executes a search in the current keychain. The search configured to not
