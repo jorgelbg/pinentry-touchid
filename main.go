@@ -247,7 +247,7 @@ func GetPIN(authFn AuthFunc, promptFn PromptFunc, logger *log.Logger) GetPinFunc
 
 		matches = keyIDRegex.FindStringSubmatch(s.Desc)
 		keyID := matches[1]
-		if len(keyID) != 8 && len(keyID) != 16 {
+		if len(keyID) != 8 && len(keyID) != 16 && len(keyID) != 18 {
 			logger.Printf("Invalid keyID: %s", keyID)
 			return "", assuanError(fmt.Errorf("invalid keyID: %s", keyID))
 		}
