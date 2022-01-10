@@ -247,7 +247,12 @@ func GetPIN(authFn AuthFunc, promptFn PromptFunc, logger *log.Logger) GetPinFunc
 
 		matches = keyIDRegex.FindStringSubmatch(s.Desc)
 		keyID := matches[1]
-		if len(keyID) != 8 && len(keyID) != 16 && len(keyID) != 18 {
+
+		// Drop the optional 0x prefix from keyID (--keyid-format)
+		// https://www.gnupg.org/documentation/manuals/gnupg/GPG-Configuration-Options.html
+		keyID = strings.TrimPrefix(keyID, "0x")
+
+		if len(keyID) != 8 && len(keyID) != 16 {
 			logger.Printf("Invalid keyID: %s", keyID)
 			return "", assuanError(fmt.Errorf("invalid keyID: %s", keyID))
 		}
