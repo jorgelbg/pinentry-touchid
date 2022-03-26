@@ -50,6 +50,7 @@ var (
 
 	emailRegex = regexp.MustCompile(`\"(?P<name>.*<(?P<email>.*)>)\"`)
 	keyIDRegex = regexp.MustCompile(`ID (?P<keyId>.*),`) // keyID should be of exactly 8 or 16 characters
+	sshKeyIDRegex = regexp.MustCompile(`SHA256:(?P<keyId>.*)`)
 
 	errEmptyResults    = errors.New("no matching entry was found")
 	errMultipleMatches = errors.New("multiple entries matched the query")
@@ -57,6 +58,12 @@ var (
 	check      = flag.Bool("check", false, "Verify that pinentry-mac is present in the system.")
 	fixSymlink = flag.Bool("fix", false, "Set up pinentry-mac as the fallback PIN entry program.")
 	_          = flag.String("display", "", "Set the X display (unused)")
+)
+
+const (
+	expectedKeyLengthGPG = 8
+	expectedKeyLengthFullGPG = 16
+	expectedKeyLengthSSH = 43
 )
 
 // checkEntryInKeychain executes a search in the current keychain. The search configured to not
@@ -243,18 +250,33 @@ func (c KeychainClient) Msg(pinentry.Settings) *common.Error {
 func GetPIN(authFn AuthFunc, promptFn PromptFunc, logger *log.Logger) GetPinFunc {
 	return func(s pinentry.Settings) (string, *common.Error) {
 		matches := emailRegex.FindStringSubmatch(s.Desc)
-		name := strings.Split(matches[1], " <")[0]
-		email := matches[2]
+		name := ""
+		email := ""
+
+		if len(matches) > 2 {
+			name = strings.Split(matches[1], " <")[0]
+			email = matches[2]
+		}
+
+		keyID := ""
 
 		matches = keyIDRegex.FindStringSubmatch(s.Desc)
-		keyID := matches[1]
+		if len(matches) >= 2 {
+			keyID = matches[1]
+		} else {
+			matches = sshKeyIDRegex.FindStringSubmatch(s.Desc)
+			if len(matches) >= 1 {
+				keyID = matches[1]
+				name = "ssh"
+				email = keyID
+			}
+		}
 
 		// Drop the optional 0x prefix from keyID (--keyid-format)
 		// https://www.gnupg.org/documentation/manuals/gnupg/GPG-Configuration-Options.html
 		keyID = strings.TrimPrefix(keyID, "0x")
 
-		if len(keyID) != 8 && len(keyID) != 16 {
-			logger.Printf("Invalid keyID: %s", keyID)
+		if len(keyID) != expectedKeyLengthGPG && len(keyID) != expectedKeyLengthFullGPG && len(keyID) != expectedKeyLengthSSH {
 			return "", assuanError(fmt.Errorf("invalid keyID: %s", keyID))
 		}
 
