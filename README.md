@@ -157,6 +157,7 @@ I've tested `pinentry-touchid` in the following combinations of devices and macO
 * MacBook Pro (15-inch, 2018), macOS Catalina - 10.15.7
 * MacBook Pro (15-inch, 2018), macOS Big Sur - 11.4, 11.5.0, 11.5.1
 * MacBook Pro (16-inch, Late 2019), macOS Big Sur - 11.4, 11.5.1
+* MacBook Pro (16-inch, Late 2021), macOS Monterey - 12.2
 
 ## Links
 
