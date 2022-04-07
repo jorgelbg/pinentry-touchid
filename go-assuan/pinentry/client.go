@@ -129,14 +129,28 @@ func (c *Client) Apply(s Settings) {
 
 // GetPIN shows window with password textbox, Cancel and Ok buttons.
 // Error is returned if Cancel is pressed.
-func (c *Client) GetPIN() (string, error) {
+func (c *Client) GetPIN(s Settings) (string, *common.Error) {
 	if c.qualityBar {
-		return c.getPINWithQualBar()
+		pin, err := c.getPINWithQualBar()
+		if err != nil {
+			return "", &common.Error{
+				Src:     common.ErrSrcPinentry,
+				SrcName: "pinentry",
+				Code:    common.ErrCanceled,
+				Message: err.Error(),
+			}
+		}
+		return pin, nil
 	}
 
 	dat, err := c.Session.SimpleCmd("GETPIN", "")
 	if err != nil {
-		return "", err
+		return "", &common.Error{
+			Src:     common.ErrSrcPinentry,
+			SrcName: "pinentry",
+			Code:    common.ErrCanceled,
+			Message: err.Error(),
+		}
 	}
 	return string(dat), nil
 }
@@ -193,12 +207,21 @@ func (c *Client) getPINWithQualBar() (string, error) {
 
 // Confirm shows window with Cancel and Ok buttons but without password
 // textbox, error is returned if Cancel is pressed (as usual).
-func (c *Client) Confirm() error {
+func (c *Client) Confirm(s Settings) (bool, *common.Error) {
 	_, err := c.Session.SimpleCmd("CONFIRM", "")
-	return err
+	if err != nil {
+		return false, &common.Error{
+			Src:     common.ErrSrcPinentry,
+			SrcName: "pinentry",
+			Code:    common.ErrCanceled,
+			Message: err.Error(),
+		}
+	}
+	return true, nil
 }
 
 // Message just shows window with only OK button.
-func (c *Client) Message() {
+func (c *Client) Message(s Settings) *common.Error {
 	c.Session.SimpleCmd("MESSAGE", "")
+	return nil
 }
