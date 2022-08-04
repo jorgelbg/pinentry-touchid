@@ -414,9 +414,21 @@ func fixPINBinary(oldPath string) error {
 func main() {
 	flag.Parse()
 	if !sensor.IsTouchIDAvailable() {
-		fmt.Fprintf(os.Stderr,
-			"%v pinentry-touchid does not support devices without a Touch ID sensor!\n", emoji.CrossMark)
-		os.Exit(-1)
+		client, err := pinentry.LaunchCustom("pinentry-mac")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Pinentry Launch returned error: %v\n", err)
+			os.Exit(-1)
+		}
+		callbacks := pinentry.Callbacks{
+			GetPIN:  client.GetPIN,
+			Confirm: client.Confirm,
+			Msg:     client.Message,
+		}
+
+		if err := pinentry.Serve(callbacks, "Hi from pinentry-mac!"); err != nil {
+			fmt.Fprintf(os.Stderr, "Pinentry Serve returned error: %v\n", err)
+			os.Exit(-1)
+		}
 	}
 
 	if *fixSymlink {
