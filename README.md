@@ -129,7 +129,7 @@ If any error is reported `pinentry-touchid` can automatically fix the symlink fo
 $ pinentry-touchid -fix
 ```
 
-## Configuration
+## Manually add your GPG key password to the Keychain
 
 First, ensure pinentry-mac is already using the Keychain:
 
