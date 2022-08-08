@@ -11,6 +11,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"io/fs"
 	"log"
 	"os"
@@ -48,8 +49,8 @@ var (
 	// DefaultLogLocation is the location of the log file
 	DefaultLogLocation = filepath.Join(filepath.Clean(os.TempDir()), DefaultLogFilename)
 
-	emailRegex = regexp.MustCompile(`\"(?P<name>.*<(?P<email>.*)>)\"`)
-	keyIDRegex = regexp.MustCompile(`ID (?P<keyId>.*),`) // keyID should be of exactly 8 or 16 characters
+	emailRegex    = regexp.MustCompile(`\"(?P<name>.*<(?P<email>.*)>)\"`)
+	keyIDRegex    = regexp.MustCompile(`ID (?P<keyId>.*),`) // keyID should be of exactly 8 or 16 characters
 	sshKeyIDRegex = regexp.MustCompile(`SHA256:(?P<keyId>.*)`)
 
 	errEmptyResults    = errors.New("no matching entry was found")
@@ -61,9 +62,9 @@ var (
 )
 
 const (
-	expectedKeyLengthGPG = 8
+	expectedKeyLengthGPG     = 8
 	expectedKeyLengthFullGPG = 16
-	expectedKeyLengthSSH = 43
+	expectedKeyLengthSSH     = 43
 )
 
 // checkEntryInKeychain executes a search in the current keychain. The search configured to not
@@ -196,8 +197,15 @@ func passwordPrompt(s pinentry.Settings) ([]byte, error) {
 	// checkbox, but this is not the case.
 	// p.Option("allow-external-password-cache")
 	p.Set("KEYINFO", s.KeyInfo)
-	p.Set("PROMPT", s.Prompt)
-	p.Set("REPEAT", s.RepeatPrompt)
+	if s.Prompt != "" {
+		p.Set("PROMPT", s.Prompt)
+	} else {
+		// set "PIN" as the default prompt
+		p.Set("PROMPT", "PIN")
+	}
+	if s.RepeatPrompt != "" {
+		p.Set("REPEAT", s.RepeatPrompt)
+	}
 	p.Set("REPEATERROR", s.RepeatError)
 
 	return p.GetPin()
@@ -425,7 +433,7 @@ func main() {
 			Msg:     client.Message,
 		}
 
-		if err := pinentry.Serve(callbacks, "Hi from pinentry-mac!"); err != nil {
+		if err := pinentry.Serve(callbacks, "Hi from pinentry-mac!"); err != nil && err != io.EOF {
 			fmt.Fprintf(os.Stderr, "Pinentry Serve returned error: %v\n", err)
 			os.Exit(-1)
 		}
@@ -464,7 +472,7 @@ func main() {
 		Msg:     client.Msg,
 	}
 
-	if err := pinentry.Serve(callbacks, "Hi from pinentry-touchid!"); err != nil {
+	if err := pinentry.Serve(callbacks, "Hi from pinentry-touchid!"); err != nil && err != io.EOF {
 		fmt.Fprintf(os.Stderr, "Pinentry Serve returned error: %v\n", err)
 		os.Exit(-1)
 	}
