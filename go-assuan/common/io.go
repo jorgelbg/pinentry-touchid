@@ -2,6 +2,7 @@ package common
 
 import (
 	"bufio"
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -74,8 +75,15 @@ func WriteLine(pipe io.Writer, cmd string, params string) error {
 
 	Logger.Println(">", cmd)
 
-	line := []byte(strings.ToUpper(cmd) + " " + escapeParameters(params) + "\n")
-	_, err := pipe.Write(line)
+	var b bytes.Buffer
+	b.WriteString(strings.ToUpper(cmd))
+
+	if len(params) > 0 {
+		b.WriteString(" " + escapeParameters(params))
+	}
+
+	b.WriteString("\n")
+	_, err := pipe.Write(b.Bytes())
 	return err
 }
 
