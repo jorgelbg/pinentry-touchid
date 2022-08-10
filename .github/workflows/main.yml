@@ -29,3 +29,17 @@ jobs:
 
       - name: Test
         run: go test ./...
+
+      - name: Remove old XCode SDKs
+        run: sudo rm -Rf /Library/Developer/CommandLineTools/SDKs/*
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v2
+        with:
+          args: build --rm-dist --snapshot
+
+      - name: Upload assets
+        uses: actions/upload-artifact@v3
+        with:
+          name: pinentry-touchid
+          path: dist/*
