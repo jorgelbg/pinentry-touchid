@@ -213,14 +213,21 @@ func passwordPrompt(s pinentry.Settings) ([]byte, error) {
 
 func assuanError(err error) *common.Error {
 	var message = "Unspecified error"
+	var code common.ErrorCode = common.ErrCanceled
+
 	if err != nil {
 		message = err.Error()
+
+		if touchid.DidUserCancel(err) {
+			message = "User cancelled."
+			code = common.ErrCanceled
+		}
 	}
 
 	return &common.Error{
 		Src:     common.ErrSrcPinentry,
 		SrcName: "pinentry",
-		Code:    common.ErrCanceled,
+		Code:    code,
 		Message: message,
 	}
 }
@@ -378,7 +385,7 @@ func GetPIN(authFn AuthFunc, promptFn PromptFunc, logger *log.Logger) GetPinFunc
 		// User cancelled.
 		if touchid.DidUserCancel(err) {
 			logger.Printf("Authentication cancelled")
-			return "", nil
+			return "", assuanError(err)
 		}
 
 		// Other error.
