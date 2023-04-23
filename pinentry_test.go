@@ -106,8 +106,8 @@ func TestGetPINUnsuccessfulAuthentication(t *testing.T) {
 	fn := GetPIN(failedAuthFn, dummyPrompt, logger)
 	pass, pinErr := fn(params)
 
-	if pinErr != nil {
-		t.Fatalf("call to GetPIN should succeed: %s", pinErr)
+	if pinErr == nil {
+		t.Fatalf("call to GetPIN should not succeed: %s", pinErr)
 	}
 
 	if pass != emptyPassword {

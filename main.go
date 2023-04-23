@@ -212,11 +212,23 @@ func passwordPrompt(s pinentry.Settings) ([]byte, error) {
 }
 
 func assuanError(err error) *common.Error {
+	var message = "Unspecified error"
+	var code common.ErrorCode = common.ErrCanceled
+
+	if err != nil {
+		message = err.Error()
+
+		if touchid.DidUserCancel(err) {
+			message = "User cancelled."
+			code = common.ErrCanceled
+		}
+	}
+
 	return &common.Error{
 		Src:     common.ErrSrcPinentry,
 		SrcName: "pinentry",
-		Code:    common.ErrCanceled,
-		Message: err.Error(),
+		Code:    code,
+		Message: message,
 	}
 }
 
@@ -347,22 +359,38 @@ func GetPIN(authFn AuthFunc, promptFn PromptFunc, logger *log.Logger) GetPinFunc
 		}
 
 		var ok bool
-		if ok, err = authFn(fmt.Sprintf("access the PIN for %s", keychainLabel)); err != nil {
-			logger.Printf("Error authenticating with Touch ID: %s", err)
+		ok, err = authFn(fmt.Sprintf("access the PIN for %s", keychainLabel))
+
+		// If the auth was successful, fetch the password from the keychain.
+		if ok {
+			password, err := passwordFromKeychain(keychainLabel)
+			if err != nil {
+				logger.Printf("Error fetching password from Keychain %s", err)
+			}
+
+			return password, nil
+		}
+
+		// If the user opted to use manual entry, fetch the password from pinentry-mac.
+		if touchid.DidUserFallback(err) {
+			logger.Printf("User opted to enter password manually")
+			pin, err := promptFn(s)
+			if err != nil {
+				logger.Printf("Error calling pinentry program (%s): %s", pinentryBinary.GetBinary(), err)
+			}
+
+			return string(pin), nil
+		}
+
+		// User cancelled.
+		if touchid.DidUserCancel(err) {
+			logger.Printf("Authentication cancelled")
 			return "", assuanError(err)
 		}
 
-		if !ok {
-			logger.Printf("Failed to authenticate")
-			return "", nil
-		}
-
-		password, err := passwordFromKeychain(keychainLabel)
-		if err != nil {
-			log.Printf("Error fetching password from Keychain %s", err)
-		}
-
-		return password, nil
+		// Other error.
+		logger.Printf("Failed to authenticate: %s", err)
+		return "", assuanError(err)
 	}
 }
 

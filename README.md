@@ -21,7 +21,7 @@ macOS keychain.
 This program interacts with the `gpg-agent` for providing a password, using the following rules:
 
 - If the password entry for the given key cannot be found in the Keychain we fallback to the
-  `pinentry-mac` program to get the password. We recommend preventing `pinentry-mac` from storing the
+  `pinentry-mac` program to get the password. We *strongly* recommend preventing `pinentry-mac` from storing the
   password: uncheck the <kbd>Save in keychain</kbd> checkbox in the dialog.
 
 - If a password entry is found the user will be shown the Touch ID dialog and upon successful
