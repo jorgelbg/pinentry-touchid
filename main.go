@@ -212,11 +212,16 @@ func passwordPrompt(s pinentry.Settings) ([]byte, error) {
 }
 
 func assuanError(err error) *common.Error {
+	var message = "Unspecified error"
+	if err != nil {
+		message = err.Error()
+	}
+
 	return &common.Error{
 		Src:     common.ErrSrcPinentry,
 		SrcName: "pinentry",
 		Code:    common.ErrCanceled,
-		Message: err.Error(),
+		Message: message,
 	}
 }
 
