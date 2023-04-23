@@ -347,22 +347,38 @@ func GetPIN(authFn AuthFunc, promptFn PromptFunc, logger *log.Logger) GetPinFunc
 		}
 
 		var ok bool
-		if ok, err = authFn(fmt.Sprintf("access the PIN for %s", keychainLabel)); err != nil {
-			logger.Printf("Error authenticating with Touch ID: %s", err)
-			return "", assuanError(err)
+		ok, err = authFn(fmt.Sprintf("access the PIN for %s", keychainLabel))
+
+		// If the auth was successful, fetch the password from the keychain.
+		if ok {
+			password, err := passwordFromKeychain(keychainLabel)
+			if err != nil {
+				logger.Printf("Error fetching password from Keychain %s", err)
+			}
+
+			return password, nil
 		}
 
-		if !ok {
-			logger.Printf("Failed to authenticate")
+		// If the user opted to use manual entry, fetch the password from pinentry-mac.
+		if touchid.DidUserFallback(err) {
+			logger.Printf("User opted to enter password manually")
+			pin, err := promptFn(s)
+			if err != nil {
+				logger.Printf("Error calling pinentry program (%s): %s", pinentryBinary.GetBinary(), err)
+			}
+
+			return string(pin), nil
+		}
+
+		// User cancelled.
+		if touchid.DidUserCancel(err) {
+			logger.Printf("Authentication cancelled")
 			return "", nil
 		}
 
-		password, err := passwordFromKeychain(keychainLabel)
-		if err != nil {
-			log.Printf("Error fetching password from Keychain %s", err)
-		}
-
-		return password, nil
+		// Other error.
+		logger.Printf("Failed to authenticate: %s", err)
+		return "", assuanError(err)
 	}
 }
 
