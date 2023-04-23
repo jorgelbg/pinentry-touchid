@@ -3,6 +3,7 @@ module github.com/jorgelbg/pinentry-touchid
 go 1.16
 
 replace github.com/foxcpp/go-assuan => ./go-assuan
+replace github.com/lox/go-touchid => ./go-touchid
 
 require (
 	github.com/enescakir/emoji v1.0.0 // indirect
