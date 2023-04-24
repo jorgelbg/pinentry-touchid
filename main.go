@@ -19,6 +19,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"syscall"
 
 	"github.com/enescakir/emoji"
 	"github.com/foxcpp/go-assuan/common"
@@ -419,24 +420,54 @@ func fixPINBinary(oldPath string) error {
 	return nil
 }
 
+// execvePinentryMac will replace the running process with `pinentry-mac`, using the execve(2) syscall.
+//
+// If everything is successful, this function will never return.
+// If something goes wrong, this function will return an error.
+func execvePinentryMac() error {
+	pinentryMacPath, err := exec.LookPath("pinentry-mac")
+	if err != nil {
+		return fmt.Errorf("Unable to find pinentry-mac: %w", err)
+	}
+
+	err = syscall.Exec(pinentryMacPath, os.Args, os.Environ())
+	if err != nil {
+		return fmt.Errorf("Unable to execute pinentry-mac: %w", err)
+	}
+
+	return nil
+}
+
 func main() {
 	flag.Parse()
+
+	// If TouchID is not available, defer to pinentry-mac.
 	if !sensor.IsTouchIDAvailable() {
-		client, err := pinentry.LaunchCustom("pinentry-mac")
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Pinentry Launch returned error: %v\n", err)
-			os.Exit(-1)
+		err := execvePinentryMac()
+		returnErr := &common.Error{
+			Src:     common.ErrSrcPinentry,
+			SrcName: "pinentry-mac",
+			Code:    common.ErrNoPinEntry,
+			Message: err.Error(),
 		}
+
 		callbacks := pinentry.Callbacks{
-			GetPIN:  client.GetPIN,
-			Confirm: client.Confirm,
-			Msg:     client.Message,
+			Confirm: func(s pinentry.Settings) (bool, *common.Error) {
+				return false, returnErr
+			},
+			GetPIN: func(s pinentry.Settings) (string, *common.Error) {
+				return "", returnErr
+			},
+			Msg: func(s pinentry.Settings) *common.Error {
+				return returnErr
+			},
 		}
 
 		if err := pinentry.Serve(callbacks, "Hi from pinentry-mac!"); err != nil && err != io.EOF {
 			fmt.Fprintf(os.Stderr, "Pinentry Serve returned error: %v\n", err)
-			os.Exit(-1)
 		}
+
+		os.Exit(-1)
 	}
 
 	if *fixSymlink {
