@@ -45,19 +45,19 @@ If you have already installed GPG, make sure that executing `pinentry` shows a G
 the following command:
 
 ```sh
-$ echo GETPIN | pinentry
+echo GETPIN | pinentry
 ```
 
 You should get the dialog from [pinentry-mac](https://github.com/GPGTools/pinentry-mac). If that is not the case you can install it though Homebrew:
 
 ```sh
-$ brew install pinentry-mac
+brew install pinentry-mac
 ```
 
 You can overwrite the `pinentry` alias to point to `pinentry-mac`:
 
 ```sh
-$ alias pinentry='pinentry-mac'
+alias pinentry='pinentry-mac'
 ```
 
 _Then try again whether you see a GUI prompt._
@@ -67,7 +67,7 @@ absolute path that points to the `$HOMEBREW_PREFIX/opt` path. In that case you c
 following command to automatically fix the symlink.
 
 ```sh
-$ pinentry-touchid -fix
+pinentry-touchid -fix
 ```
 
 ### Homebrew
@@ -77,8 +77,8 @@ As part of our release process we keep an updated Homebrew Formula. To install `
 Homebrew execute the following commands:
 
 ```sh
-$ brew tap jorgelbg/tap
-$ brew install pinentry-touchid
+brew tap jorgelbg/tap
+brew install pinentry-touchid
 ```
 
 Homebrew will print the next steps, which will look similar to:
@@ -112,7 +112,7 @@ Homebrew will print the next steps, which will look similar to:
   following line to your gpg agent configuration in: `~/.gnupg/gpg-agent.conf`:
 
 ```sh
-$ pinentry-program /usr/local/bin/pinentry-touchid
+pinentry-program /usr/local/bin/pinentry-touchid
 ```
 
 You can replace `/usr/local/bin/pinentry-touchid` with the path where the binary was stored.
@@ -121,12 +121,12 @@ Make sure that the `pinentry-mac` is configured to be the default `pinentry` pro
 as fallback). You can check which PIN program will be used by default by executing:
 
 ```sh
-$ pinentry-touchid -check
+pinentry-touchid -check
 ```
 
 If any error is reported `pinentry-touchid` can automatically fix the symlink for you:
 ```sh
-$ pinentry-touchid -fix
+pinentry-touchid -fix
 ```
 
 ## Manually add your GPG key password to the Keychain
@@ -134,7 +134,7 @@ $ pinentry-touchid -fix
 First, ensure pinentry-mac is already using the Keychain:
 
 ```sh
-$ security find-generic-password -s 'GnuPG'
+security find-generic-password -s 'GnuPG'
 ```
 
 You should get a big list of attributes.
@@ -151,7 +151,7 @@ If you do not see this error, skip ahead to [Configuring pinentry-touchid](#conf
 Before configuring pinentry-touchid, you should configure pinentry-mac to use the Keychain at least once:
 
 ```sh
-$ defaults write org.gpgtools.common UseKeychain -bool yes
+defaults write org.gpgtools.common UseKeychain -bool yes
 ```
 
 Note that there are two defaults which are the reverse of each other.
@@ -160,13 +160,13 @@ This one, `UseKeychain`, should be set to `yes` or `true`.
 Ensure the `pinentry-program` entry in your `~/.gnupg/gpg-agent.conf` points to pinentry-mac, then restart the GPG Agent:
 
 ```sh
-$ gpgconf --kill gpg-agent
+gpgconf --kill gpg-agent
 ```
 
 Using gpg should then use pinentry-mac to provide a GUI prompt for your GPG passphrase:
 
 ```sh
-$ echo 1234 | gpg -as -
+echo 1234 | gpg -as -
 ```
 
 Make sure you check the "Save in Keychain" box on the prompt.
@@ -176,7 +176,7 @@ If so, use "Always Allow" to avoid future prompts.
 You should now be able to see the new Keychain entry via the same command as before:
 
 ```sh
-$ security find-generic-password -s 'GnuPG'
+security find-generic-password -s 'GnuPG'
 ```
 
 Continue on to the next section to replace this password prompt with a TouchID prompt.
@@ -187,14 +187,14 @@ Once your Keychain is configured correctly, you can update your `gpg-agent.conf`
 Remember to restart the GPG Agent each time you make a change to this configuration file:
 
 ```sh
-$ gpgconf --kill gpg-agent
+gpgconf --kill gpg-agent
 ```
 
 We recommend disabling the option to store the password in the macOS Keychain for the default
 pinentry-mac program with the following option:
 
 ```sh
-$ defaults write org.gpgtools.common DisableKeychain -bool yes
+defaults write org.gpgtools.common DisableKeychain -bool yes
 ```
 
 This will allow `pinentry-touchid` to create and automatically take ownership of the entry in the
