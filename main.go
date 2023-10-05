@@ -73,7 +73,7 @@ const (
 func checkEntryInKeychain(label string) (bool, error) {
 	query := keychain.NewItem()
 	query.SetSecClass(keychain.SecClassGenericPassword)
-	query.SetLabel(label)
+	query.SetAccount(label)
 	query.SetMatchLimit(keychain.MatchLimitOne)
 	query.SetReturnData(false)
 	query.SetReturnAttributes(true)
@@ -138,7 +138,7 @@ func WithLogger(logger *log.Logger) KeychainClient {
 func passwordFromKeychain(label string) (string, error) {
 	query := keychain.NewItem()
 	query.SetSecClass(keychain.SecClassGenericPassword)
-	query.SetLabel(label)
+	query.SetAccount(label)
 	query.SetMatchLimit(keychain.MatchLimitOne)
 	query.SetReturnData(true)
 
@@ -288,8 +288,10 @@ func GetPIN(authFn AuthFunc, promptFn PromptFunc, logger *log.Logger) GetPinFunc
 			return "", assuanError(fmt.Errorf("invalid keyID: %s", keyID))
 		}
 
+		keyInfo := strings.Split(s.KeyInfo, "/")[1]
+
 		keychainLabel := fmt.Sprintf("%s <%s> (%s)", name, email, keyID)
-		exists, err := checkEntryInKeychain(keychainLabel)
+		exists, err := checkEntryInKeychain(keyInfo)
 		if err != nil {
 			logger.Printf("error checking entry in keychain: %s", err)
 			return "", assuanError(err)
@@ -324,7 +326,7 @@ func GetPIN(authFn AuthFunc, promptFn PromptFunc, logger *log.Logger) GetPinFunc
 			// not, we create an entry in the keychain, which automatically gives us ownership (i.e the
 			// user will not be asked for a password). In either case, the access to the item will be
 			// guarded by Touch ID.
-			exists, err = checkEntryInKeychain(keychainLabel)
+			exists, err = checkEntryInKeychain(keyInfo)
 			if err != nil {
 				logger.Printf("error checking entry in keychain: %s", err)
 				return "", assuanError(err)
@@ -357,7 +359,7 @@ func GetPIN(authFn AuthFunc, promptFn PromptFunc, logger *log.Logger) GetPinFunc
 			return "", nil
 		}
 
-		password, err := passwordFromKeychain(keychainLabel)
+		password, err := passwordFromKeychain(keyInfo)
 		if err != nil {
 			log.Printf("Error fetching password from Keychain %s", err)
 		}
