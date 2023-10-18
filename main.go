@@ -70,10 +70,10 @@ const (
 // checkEntryInKeychain executes a search in the current keychain. The search configured to not
 // return the Data stored in the Keychain, as a result this should not require any type of
 // authentication.
-func checkEntryInKeychain(label string) (bool, error) {
+func checkEntryInKeychain(keyInfo string) (bool, error) {
 	query := keychain.NewItem()
 	query.SetSecClass(keychain.SecClassGenericPassword)
-	query.SetLabel(label)
+	query.SetAccount(keyInfo)
 	query.SetMatchLimit(keychain.MatchLimitOne)
 	query.SetReturnData(false)
 	query.SetReturnAttributes(true)
@@ -135,10 +135,10 @@ func WithLogger(logger *log.Logger) KeychainClient {
 }
 
 // passwordFromKeychain retrieves a password given a label from the Keychain
-func passwordFromKeychain(label string) (string, error) {
+func passwordFromKeychain(keyInfo string) (string, error) {
 	query := keychain.NewItem()
 	query.SetSecClass(keychain.SecClassGenericPassword)
-	query.SetLabel(label)
+	query.SetAccount(keyInfo)
 	query.SetMatchLimit(keychain.MatchLimitOne)
 	query.SetReturnData(true)
 
@@ -288,8 +288,12 @@ func GetPIN(authFn AuthFunc, promptFn PromptFunc, logger *log.Logger) GetPinFunc
 			return "", assuanError(fmt.Errorf("invalid keyID: %s", keyID))
 		}
 
+		// s.KeyInfo is always in the form of x/cacheId
+		// https://gist.github.com/mdeguzis/05d1f284f931223624834788da045c65#file-info-pinentry-L357-L362
+		keyInfo := strings.Split(s.KeyInfo, "/")[1]
+
 		keychainLabel := fmt.Sprintf("%s <%s> (%s)", name, email, keyID)
-		exists, err := checkEntryInKeychain(keychainLabel)
+		exists, err := checkEntryInKeychain(keyInfo)
 		if err != nil {
 			logger.Printf("error checking entry in keychain: %s", err)
 			return "", assuanError(err)
@@ -315,16 +319,12 @@ func GetPIN(authFn AuthFunc, promptFn PromptFunc, logger *log.Logger) GetPinFunc
 				return "", assuanError(fmt.Errorf("pinentry-mac didn't return a password"))
 			}
 
-			// s.KeyInfo is always in the form of x/cacheId
-			// https://gist.github.com/mdeguzis/05d1f284f931223624834788da045c65#file-info-pinentry-L357-L362
-			keyInfo := strings.Split(s.KeyInfo, "/")[1]
-
 			// pinentry-mac can create an item in the keychain, if that was the case, the user will have
 			// to authorize our app to access the item without asking for a password from the user. If
 			// not, we create an entry in the keychain, which automatically gives us ownership (i.e the
 			// user will not be asked for a password). In either case, the access to the item will be
 			// guarded by Touch ID.
-			exists, err = checkEntryInKeychain(keychainLabel)
+			exists, err = checkEntryInKeychain(keyInfo)
 			if err != nil {
 				logger.Printf("error checking entry in keychain: %s", err)
 				return "", assuanError(err)
@@ -357,7 +357,7 @@ func GetPIN(authFn AuthFunc, promptFn PromptFunc, logger *log.Logger) GetPinFunc
 			return "", nil
 		}
 
-		password, err := passwordFromKeychain(keychainLabel)
+		password, err := passwordFromKeychain(keyInfo)
 		if err != nil {
 			log.Printf("Error fetching password from Keychain %s", err)
 		}
